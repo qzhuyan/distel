@@ -173,6 +173,7 @@ find_source(Mod) ->
       catch
         nothing -> {error,fmt("Can't find source for ~p", [BeamFName])};
         several -> {error,fmt("Several possible sources for ~p", [BeamFName])};
+	{clue,SomeFile} -> {clue, SomeFile}  ;
         _:R -> {error,fmt("Couldnt guess source ~p ~p",[BeamFName,R])}
       end;
     error ->
@@ -184,14 +185,23 @@ guess_source_file(Mod, BeamFName) ->
   Erl = to_list(Mod) ++ ".erl",
   Dir = dirname(BeamFName),
   DotDot = dirname(Dir),
-  try_srcs([src_from_beam(Mod),
+  BeamSrc = src_from_beam(Mod),
+  case try_srcs([BeamSrc,
             join([Dir, Erl]),
             join([DotDot, "src", Erl]),
             join([DotDot, "src", "*", Erl]),
             join([DotDot, "esrc", Erl]),
-            join([DotDot, "erl", Erl])]).
+            join([DotDot, "erl", Erl])]) of
+      not_found when BeamSrc == "" ->
+	  throw(nothing);
+      not_found when BeamSrc =/= "" ->
+	  throw({clue,BeamSrc});
+      Found ->
+	  Found
+  end.
+    
 
-try_srcs([]) -> throw(nothing);
+try_srcs([]) -> not_found;
 try_srcs(["" | T]) -> try_srcs(T);
 try_srcs([H | T]) ->
   case filelib:wildcard(H) of

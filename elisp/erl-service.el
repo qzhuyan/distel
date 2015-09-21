@@ -801,6 +801,17 @@ When FUNCTION is specified, the point is moved to its start."
               (when function
                 (and (erl-search-definition function arity)
                      (erl-flash-region))))
+	     (['rex ['clue path]] 
+	      (message "find a clue: %s " path )
+	      (setq clpath (nth 1 (split-string path "/lib/")))
+	      (message " clue points to lib: %s " clpath )
+	      (dolist (libpath erl-lib-path)
+		(let ((tmppath (concat libpath "/" clpath)))
+		  (message "try to find file in libs: %s and it exists: %s"  tmppath (file-exists-p tmppath)) 
+		  (when (file-exists-p tmppath) (setq pathfound tmppath))))
+	      (when pathfound (find-file pathfound) 
+		    (when function (and (erl-search-definition function arity)
+					(erl-flash-region)))))
              (['rex ['error reason]]
               ;; Remove the history marker, since we didn't go anywhere
               (ring-remove erl-find-history-ring)
