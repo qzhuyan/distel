@@ -802,16 +802,9 @@ When FUNCTION is specified, the point is moved to its start."
                 (and (erl-search-definition function arity)
                      (erl-flash-region))))
 	     (['rex ['clue path]] 
-	      (message "find a clue: %s " path )
-	      (setq clpath (nth 1 (split-string path "/lib/")))
-	      (message " clue points to lib: %s " clpath )
-	      (dolist (libpath erl-lib-path)
-		(let ((tmppath (concat libpath "/" clpath)))
-		  (message "try to find file in libs: %s and it exists: %s"  tmppath (file-exists-p tmppath)) 
-		  (when (file-exists-p tmppath) (setq pathfound tmppath))))
-	      (when pathfound (find-file pathfound) 
-		    (when function (and (erl-search-definition function arity)
-					(erl-flash-region)))))
+	      (message "get a clue: %s " path )
+	      (erl-find-clue-in-libs path function arity)
+	      )
              (['rex ['error reason]]
               ;; Remove the history marker, since we didn't go anywhere
               (ring-remove erl-find-history-ring)
@@ -1318,5 +1311,60 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
     `(let ((,start (point)))
        (prog1 (progn (insert ,@body))
          (add-text-properties ,start (point) ,props)))))
+
+
+(require 'find-lisp)
+(defun erl-find-clue-in-libs(clue function arity)
+  "find erl source code "
+  (interactive "swhat clue?")
+  (message "find a clue: %s search for fun: %s/%s" clue function arity)
+  (setq bname (file-name-nondirectory  clue))
+  (let ((files (find-lisp-find-files erl-proj-path bname)))
+       (cond ((eq (length files) 1) ((find-file (nth 0 files)) (when function (and (erl-search-definition function arity)
+										   (erl-flash-region)))))
+	     ((eq (length files) 0) (message "cannot find %s in local lib path" bname))
+	     (t (erl-user-sel-finds files function arity))
+	     ))
+  )
+
+
+
+(defun erl-user-sel-finds (finds fun a)
+  (message "try to find fun: %s/%s" fun a)
+  (with-current-buffer (get-buffer-create "*Erlang Src*")
+            (setq buffer-read-only t)
+            (let ((inhibit-read-only t))
+              (erase-buffer)
+              (dolist (f finds)
+		;(insert (format "%s\n" f))
+		(erl-propertize-insert (list 'function fun
+					     'arity    a
+					     'face     'bold
+					     ) (format "%s\n" f))
+		)
+	      (goto-char (point-min))
+	      (pop-to-buffer (current-buffer))
+	      (local-set-key  (kbd "RET") 'open-file-at-point-line)
+	      )))
+
+
+(defun open-file-at-point-line ()
+  (interactive)
+  (let ((function (get-text-property (line-beginning-position) 'function))
+	(arity (get-text-property (line-beginning-position) 'arity))
+	)
+    (let ((filesel (thing-at-point 'filename)))
+      (message "open %s" filesel)
+      (find-file filesel)
+      (message "try to find %s/%s" function arity)
+      (when function (and (erl-search-definition function arity)
+			  (erl-flash-region))))
+    ))
+
+(defun erl-set-proj-path(path)
+  (interactive "serlang proj src dir ")
+  (setq erl-proj-path path)
+)
+
 
 (provide 'erl-service)

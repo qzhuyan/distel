@@ -1034,7 +1034,7 @@ xref_callgraph(A) ->
     F = to_list(fmt("(XXL)(Lin)(E || ~p)",[A])),
     fun(server)-> distel_callgraph;
        (opts) -> [];
-       (otp) -> false;
+       (otp) -> true;
        (query_)-> F
     end.
 
