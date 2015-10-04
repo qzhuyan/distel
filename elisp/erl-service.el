@@ -792,7 +792,9 @@ When FUNCTION is specified, the point is moved to its start."
       (when function
         (and (erl-search-definition function arity)
              (erl-flash-region)))
+    (if (not erl-local-search) 
     (let ((node (erl-target-node)))
+      (message "before spawn")
       (erl-spawn
         (erl-send-rpc node 'distel 'find_source (list (intern module)))
         (erl-receive (function arity)
@@ -803,13 +805,16 @@ When FUNCTION is specified, the point is moved to its start."
                      (erl-flash-region))))
 	     (['rex ['clue path]] 
 	      (message "get a clue: %s " path )
-	      (erl-module-hunger-search path function a)
+	      (erl-module-hunger-search path function arity)
 	      ;; (erl-find-clue-in-libs path function arity)
 	      )
              (['rex ['error reason]]
               ;; Remove the history marker, since we didn't go anywhere
+	      (message "recv error :%s" reason)
               (ring-remove erl-find-history-ring)
-              (message "Error: %s" reason))))))))
+              (message "Error: %s" reason))))))
+    (erl-module-hunger-search (format "%s.erl" module) function arity)	     
+    )))
 
 (defun erl-find-doc-under-point ()
   "Browse html documentation for the (possibly incomplete) OTP
