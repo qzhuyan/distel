@@ -1372,22 +1372,27 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
   (setq erl-proj-path path)
 )
 
+(defun erl-set-otp-path(path)
+  (interactive "serlang otp src dir ")
+  (setq erl-otp-path path)
+)
+
 (defun erl-module-hunger-search (clue function arity)
   "erlang hunger search with many tokens"
-
-
-  ;(while erl-var-hunger-search )
   (when (or (erl-search-tkn "/deps/" clue) 
 	    (erl-search-tkn "/dep/" clue) 
 	    (erl-search-tkn "/libs/" clue) 
 	    (erl-search-tkn "/lib/" clue) 
 	    (erl-search-tkn "/src/" clue) 
-	    (erl-search-find clue function arity)
+	    (erl-search-find clue erl-proj-path function arity)
+	    (erl-search-find clue erl-otp-path function arity)
 	    )  (when function (and (erl-search-definition function arity)
 			  (erl-flash-region)))))
 
 (defun erl-search-tkn (tkn clue)
+
   (let ((parts (split-string clue tkn)))
+    (message "clue %s search %s with %s" clue tkn parts)
     (cond ((eq (length parts) 1)  nil) 
 	  ((eq (length parts) 2) 
 	   (or 
@@ -1404,8 +1409,8 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 	)
   )
 
-(defun erl-search-find (clue F A)
-  "search module with 'find' in erl-proj-path"
+(defun erl-search-find (clue Path F A)
+  "search module with 'linux cmd find' in erl-proj-path"
   (let ((tmpbuffer "*Erlang Module Find*")
 	(erlfile (file-name-nondirectory  clue))
 	(buff-prop (list 'function F
@@ -1414,13 +1419,15 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
     (with-current-buffer (get-buffer-create tmpbuffer)
       (setq buffer-read-only t)
       (let ((inhibit-read-only t)
-	    (findcmd (format "find %s -name %s" erl-proj-path erlfile)))
+	    (findcmd (format "find %s -name %s" Path erlfile)))
               (erase-buffer)
 	      (shell-command findcmd tmpbuffer (current-buffer)) 
-	      (goto-char (point-min))
-	      (pop-to-buffer (current-buffer))
-	      (add-text-properties (point-min) (point-max) buff-prop)
-	      (local-set-key  (kbd "RET") 'open-file-at-point-line)))
+	      (if (string= "" (buffer-string))
+		  nil
+		(goto-char (point-min))
+		(pop-to-buffer (current-buffer))
+		(add-text-properties (point-min) (point-max) buff-prop)
+		(local-set-key  (kbd "RET") 'open-file-at-point-line))))
     )
 )
 
