@@ -1294,13 +1294,19 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
   (interactive)
   (let ((line (get-text-property (line-beginning-position) 'line))
         (module (get-text-property (line-beginning-position) 'module))
+	(f (get-text-property (line-beginning-position) 'function))
+	(a (get-text-property (line-beginning-position) 'arity))
         (node (erl-target-node)))
     (erl-spawn
       (erl-send-rpc node 'distel 'find_source (list (intern module)))
-      (erl-receive (line)
+      (erl-receive (f a line)
           ((['rex ['ok path]]
             (find-file path)
             (erl-forward-to-line line))
+	   (['rex ['clue path]] 
+	      (erl-module-hunger-search path f a)
+	      (erl-forward-to-line line))
+	      )
            (['rex ['error reason]]
             (message "Error: %s" reason)))))))
 
