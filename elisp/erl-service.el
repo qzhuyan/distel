@@ -797,7 +797,7 @@ When FUNCTION is specified, the point is moved to its start."
       (message "before spawn")
       (erl-spawn
         (erl-send-rpc node 'distel 'find_source (list (intern module)))
-        (erl-receive (function arity)
+        (erl-receive (function arity module)
             ((['rex ['ok path]]
               (find-file path)
               (when function
@@ -812,7 +812,9 @@ When FUNCTION is specified, the point is moved to its start."
               ;; Remove the history marker, since we didn't go anywhere
 	      (message "recv error :%s" reason)
               (ring-remove erl-find-history-ring)
-              (message "Error: %s" reason))))))
+              (message "Error: %s" reason)
+	      (erl-module-hunger-search (format "%s.erl" module) function arity)	     
+	      )))))
     (erl-module-hunger-search (format "%s.erl" module) function arity)	     
     )))
 
