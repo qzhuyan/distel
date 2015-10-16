@@ -1310,7 +1310,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 	      (erl-forward-to-line line))
 	      )
            (['rex ['error reason]]
-            (message "Error: %s" reason)))))))
+            (message "Error: %s" reason))))))
 
 (defun erl-forward-to-line (line)
   (save-restriction
